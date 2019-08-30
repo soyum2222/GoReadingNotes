@@ -209,7 +209,15 @@ func gorecover(argp uintptr) interface{} {
 
 recover方法干了件非常简单的事情，把当前g的_panic中的recovered修改为true，并且返回panic的arg。  
 看到这里算是把panic做的事情搞明白了，于是逐渐忘记了小伙伴的问题。  
-其实小伙伴的问题是在recover方法中发生的，recover方法需要判断  argp == uintptr(p.argp) ，argp是调用reccover 的方法指针，p.argp则是在gopanic方法中赋值的一个 uintptr(0),而argp参数来源是		`reflectcall(nil, unsafe.Pointer(d.fn), deferArgs(d), uint32(d.siz), uint32(d.siz))` 中的  deferArgs(d) ，在gopanic 中两者相等所以能通过gorecover的判断。但是文章开头的 `代码1` 那么此处的argp参数为func闭包指针，与panic的argp不相等，所以`代码1`无法recover panic。  
+其实小伙伴的问题是在recover方法中发生的，recover方法需要判断  `argp == uintptr(p.argp)` ，argp是调用reccover 的方法指针，p.argp则是在gopanic方法中赋值的一个 uintptr(0),而argp参数来源是`reflectcall(nil, unsafe.Pointer(d.fn), deferArgs(d), uint32(d.siz), uint32(d.siz))` 中的  deferArgs(d) ，在gopanic 中两者相等所以能通过gorecover的判断。但是文章开头的 `代码1` 那么此处的argp参数为func闭包指针，与panic的argp不相等，所以`代码1`无法recover panic。  
+
+所以看到最后我还是不明白为什么golang会这样设计，于是。。。。
+
+![image.png](https://github.com/soyum2222/GoReadingNotes/blob/master/image/image01.png?raw=true "image")
+
+舒服了
+
+
 
 
 
