@@ -182,4 +182,35 @@ type _panic struct {
 ```
 
 它其实是一个连表结构link元素指向它的上一个_panic。  
+阅读了gopanic方法后，大致明白它干了件什么事情。  
+在再用panic方法后，会把当前g的defer依次执行，每执行一次就判断一次panic是否被recover处理。如果没有被处理那么就进行下一次循环，直到当前g的defer方法耗尽，defer耗尽后就进行old-school 的panic做法。  
+如果在过程中发现panic被recover处理了，那么就执行recovery方法，进行一次上下文跳转，类似于linux内核中进程调度一样的操作，重置PC寄存器的值，跳转到g当前defer方法的PC位子。
+
+
+那么我们来看下具体处理的recover方法:
+```cassandraql
+func gorecover(argp uintptr) interface{} {
+	// Must be in a function running as part of a deferred call during the panic.
+	// Must be called from the topmost function of the call
+	// (the function used in the defer statement).
+	// p.argp is the argument pointer of that topmost deferred function call.
+	// Compare against argp reported by caller.
+	// If they match, the caller is the one who can recover.
+	gp := getg()
+	p := gp._panic
+	if p != nil && !p.recovered && argp == uintptr(p.argp) {
+		p.recovered = true
+		return p.arg
+	}
+	return nil
+}
+
+```
+
+recover方法干了件非常简单的事情，把当前g的_panic中的recovered修改为true，并且返回panic的arg。  
+看到这里算是把panic做的事情搞明白了，于是逐渐忘记了小伙伴的问题。  
+其实小伙伴的问题是在recover方法中发生的，recover方法需要判断  argp == uintptr(p.argp) ，argp是调用reccover 的方法指针，p.argp则是在gopanic方法中赋值的一个 uintptr(0),而argp参数来源是		`reflectcall(nil, unsafe.Pointer(d.fn), deferArgs(d), uint32(d.siz), uint32(d.siz))` 中的  deferArgs(d) ，在gopanic 中两者相等所以能通过gorecover的判断。但是文章开头的 `代码1` 那么此处的argp参数为func闭包指针，与panic的argp不相等，所以`代码1`无法recover panic。  
+
+
+
 
