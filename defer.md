@@ -124,7 +124,10 @@ func deferprocStack(d *_defer) {
             	CALL	runtime.deferprocStack(SB)
         	
   
-            第五行 AX, ""..autotmp_1+32(SP) 把AX的值放入SP+32这个地址中，AX寄存器可以从第三行看到，是func1的地址，然后看倒数第二行MOVQ	AX, (SP) 和第一行 MOVL	$0, ""..autotmp_1+8(SP) ，可以发现，这个地方把main的栈截断了，新栈顶为SP+8。那么SP+32 func1 方法的地址，在新栈中的偏移量为24。
+            第五行 AX, ""..autotmp_1+32(SP) 把AX的值放入SP+32这个地址中，AX寄存器可以从第三行看到，
+            是func1的地址，然后看倒数第二行MOVQ	AX, (SP) 和第一行 MOVL	$0, ""..autotmp_1+8(SP) ，
+            deferprocStack的参数是一个_defer指针 sp+8 地址就是作为这个结构体参数的首地址。
+            新栈顶为SP+8。那么SP+32 func1 方法的地址，在新栈中的偏移量为24。
         
         
         type _defer struct {
